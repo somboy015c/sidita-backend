@@ -1,0 +1,51 @@
+const mongoose = require('mongoose');
+
+const VehicleSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true }, // e.g. "Land Rover Defender"
+    brand: { type: String, required: true, trim: true },
+    modelYear: { type: Number, required: true },
+    category: {
+      type: String,
+      enum: ['SUV', 'Sedan', 'Truck', 'Van', 'Luxury', 'Compact'],
+      default: 'Sedan'
+    },
+    plateNumber: { type: String, trim: true },
+    vin: { type: String, trim: true },
+
+    // Availability & pricing
+    status: {
+      type: String,
+      enum: ['available', 'leased', 'rented', 'maintenance'],
+      default: 'available'
+    },
+    dailyRentalRate: { type: Number, default: 0 },
+    monthlyLeaseRate: { type: Number, default: 0 },
+    purchasePrice: { type: Number, default: 0 },
+
+    // Specs
+    transmission: { type: String, enum: ['Automatic', 'Manual'], default: 'Automatic' },
+    fuelType: { type: String, enum: ['Petrol', 'Diesel', 'Hybrid', 'Electric'], default: 'Petrol' },
+    seats: { type: Number, default: 5 },
+    mileage: { type: Number, default: 0 },
+
+    // GPS / telematics tracking device attached to the vehicle
+    tracking: {
+      deviceId: { type: String, trim: true },
+      deviceIp: { type: String, trim: true }, // IP address of the tracker/telematics unit
+      lastKnownLocation: {
+        lat: { type: Number },
+        lng: { type: Number }
+      },
+      lastPingAt: { type: Date }
+    },
+
+    description: { type: String, trim: true },
+    images: [{ type: String }], // image URLs
+
+    createdAt: { type: Date, default: Date.now }
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model('Vehicle', VehicleSchema);
