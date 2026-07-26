@@ -5,11 +5,7 @@ const VehicleSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true }, // e.g. "Land Rover Defender"
     brand: { type: String, required: true, trim: true },
     modelYear: { type: Number, required: true },
-    category: {
-      type: String,
-      enum: ['SUV', 'Sedan', 'Truck', 'Van', 'Luxury', 'Compact'],
-      default: 'Sedan'
-    },
+    category: { type: String, default: 'Sedan', trim: true },
     plateNumber: { type: String, trim: true },
     vin: { type: String, trim: true },
 
@@ -24,8 +20,8 @@ const VehicleSchema = new mongoose.Schema(
     purchasePrice: { type: Number, default: 0 },
 
     // Specs
-    transmission: { type: String, enum: ['Automatic', 'Manual'], default: 'Automatic' },
-    fuelType: { type: String, enum: ['Petrol', 'Diesel', 'Hybrid', 'Electric'], default: 'Petrol' },
+    transmission: { type: String, default: 'Automatic', trim: true },
+    fuelType: { type: String, default: 'Petrol', trim: true },
     seats: { type: Number, default: 5 },
     mileage: { type: Number, default: 0 },
 
