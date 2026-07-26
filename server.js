@@ -7,6 +7,8 @@ const authRoutes = require('./routes/auth');
 const vehicleRoutes = require('./routes/vehicles');
 const leaseRoutes = require('./routes/leases');
 const analyticsRoutes = require('./routes/analytics');
+const adminRoutes = require('./routes/admins');
+const settingsRoutes = require('./routes/settings');
 
 const app = express();
 
@@ -40,6 +42,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/leases', leaseRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/admins', adminRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // 404 handler
 app.use((req, res) => {
