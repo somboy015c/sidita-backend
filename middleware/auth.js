@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const Admin = require('../models/Admin');
 
-function requireAdmin(req, res, next) {
+async function requireAdmin(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
 
@@ -10,7 +11,16 @@ function requireAdmin(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.admin = payload;
+
+    const admin = await Admin.findById(payload.id);
+    if (!admin) {
+      return res.status(401).json({ error: 'Session expired — please sign in again.' });
+    }
+    if ((admin.tokenVersion || 0) !== (payload.tokenVersion || 0)) {
+      return res.status(401).json({ error: 'Session expired — please sign in again.' });
+    }
+
+    req.admin = { id: admin._id.toString(), email: admin.email, name: admin.name, role: admin.role };
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
