@@ -9,9 +9,16 @@ async function requireAdmin(req, res, next) {
     return res.status(401).json({ error: 'Missing or invalid Authorization header' });
   }
 
+  let payload;
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    payload = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
 
+  // A separate try/catch: a database hiccup should NOT look like an expired session
+  // to the frontend (which force-logs-out on 401). Surface it as a normal server error instead.
+  try {
     const admin = await Admin.findById(payload.id);
     if (!admin) {
       return res.status(401).json({ error: 'Session expired — please sign in again.' });
@@ -19,11 +26,10 @@ async function requireAdmin(req, res, next) {
     if ((admin.tokenVersion || 0) !== (payload.tokenVersion || 0)) {
       return res.status(401).json({ error: 'Session expired — please sign in again.' });
     }
-
     req.admin = { id: admin._id.toString(), email: admin.email, name: admin.name, role: admin.role };
     next();
   } catch (err) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return res.status(503).json({ error: 'Temporary server error — please try again.', details: err.message });
   }
 }
 
