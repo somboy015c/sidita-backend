@@ -66,8 +66,10 @@ router.put('/:id/reset-password', requireAdmin, async (req, res) => {
     }
 
     admin.passwordHash = await bcrypt.hash(newPassword, 10);
-    admin.tokenVersion = (admin.tokenVersion || 0) + 1; // force logout everywhere for that admin
-    await admin.save();
+    await Admin.findByIdAndUpdate(admin._id, {
+      $set: { passwordHash: admin.passwordHash },
+      $inc: { tokenVersion: 1 }
+    }); // atomic update — forces logout everywhere for that admin
 
     res.json({
       message: 'Password reset. Share the new password with them securely — it will not be shown again.',
