@@ -9,6 +9,7 @@ const leaseRoutes = require('./routes/leases');
 const analyticsRoutes = require('./routes/analytics');
 const adminRoutes = require('./routes/admins');
 const settingsRoutes = require('./routes/settings');
+const uploadRoutes = require('./routes/uploads');
 
 const app = express();
 
@@ -44,10 +45,19 @@ app.use('/api/leases', leaseRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/admins', adminRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
+});
+
+// Error handler (catches multer file-size/type errors thrown synchronously in routes)
+app.use((err, req, res, next) => {
+  if (err) {
+    return res.status(400).json({ error: err.message || 'Upload failed' });
+  }
+  next();
 });
 
 // ----- Start server -----
