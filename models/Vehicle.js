@@ -24,6 +24,16 @@ const VehicleSchema = new mongoose.Schema(
     fuelType: { type: String, default: 'Petrol', trim: true },
     seats: { type: Number, default: 5 },
     mileage: { type: Number, default: 0 },
+    condition: {
+      type: String,
+      enum: ['Brand New', 'Foreign Used', 'Nigerian Used'],
+      default: 'Nigerian Used'
+    },
+    listingStatus: {
+      type: String,
+      enum: ['For Sale', 'Not For Sale'],
+      default: 'Not For Sale'
+    },
 
     // GPS / telematics tracking device attached to the vehicle
     tracking: {
