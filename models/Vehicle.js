@@ -43,6 +43,7 @@ const VehicleSchema = new mongoose.Schema(
         lat: { type: Number },
         lng: { type: Number }
       },
+      locationLabel: { type: String, trim: true }, // human-readable place name, e.g. "Ikeja, Lagos, Nigeria"
       lastPingAt: { type: Date }
     },
 
