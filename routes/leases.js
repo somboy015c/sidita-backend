@@ -2,6 +2,7 @@ const express = require('express');
 const Lease = require('../models/Lease');
 const Vehicle = require('../models/Vehicle');
 const { requireAdmin } = require('../middleware/auth');
+const { sendNewRequestEmail } = require('../lib/email');
 
 const router = express.Router();
 
@@ -27,6 +28,9 @@ router.post('/', async (req, res) => {
       endDate,
       notes
     });
+
+    // Fire-and-forget: never let an email hiccup break the customer's request.
+    sendNewRequestEmail(lease, vehicleDoc).catch((err) => console.error('[email] new request notify failed:', err.message));
 
     res.status(201).json(lease);
   } catch (err) {

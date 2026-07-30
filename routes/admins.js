@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const Admin = require('../models/Admin');
 const { requireAdmin } = require('../middleware/auth');
+const { getAllAdminEmails, sendNewAdminCredentialsEmail, sendAdminAddedNotificationEmail } = require('../lib/email');
 
 const router = express.Router();
 
@@ -30,6 +31,10 @@ router.post('/', requireAdmin, async (req, res) => {
     const existing = await Admin.findOne({ email: email.toLowerCase().trim() });
     if (existing) return res.status(409).json({ error: 'An admin with that email already exists' });
 
+    // Grab existing admin emails BEFORE creating the new one, so the "a new admin was added"
+    // notice goes to everyone except the person who was just added.
+    const existingAdminEmails = await getAllAdminEmails();
+
     const passwordHash = await bcrypt.hash(password, 10);
     const admin = await Admin.create({
       name: name || 'Admin',
@@ -37,6 +42,9 @@ router.post('/', requireAdmin, async (req, res) => {
       passwordHash,
       role: role === 'owner' ? 'owner' : 'admin'
     });
+
+    sendNewAdminCredentialsEmail(admin, password).catch((err) => console.error('[email] new admin credentials failed:', err.message));
+    sendAdminAddedNotificationEmail(admin, existingAdminEmails).catch((err) => console.error('[email] admin added notice failed:', err.message));
 
     const { passwordHash: _omit, ...safeAdmin } = admin.toObject();
     res.status(201).json(safeAdmin);
