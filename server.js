@@ -10,6 +10,7 @@ const analyticsRoutes = require('./routes/analytics');
 const adminRoutes = require('./routes/admins');
 const settingsRoutes = require('./routes/settings');
 const uploadRoutes = require('./routes/uploads');
+const geocodeRoutes = require('./routes/geocode');
 
 const app = express();
 
@@ -46,6 +47,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/admins', adminRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/geocode', geocodeRoutes);
 
 // 404 handler
 app.use((req, res) => {
