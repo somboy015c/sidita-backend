@@ -165,6 +165,17 @@ All responses are JSON. Admin-only routes require a header:
 | Method | Route | Access | Purpose |
 |---|---|---|---|
 | POST | `/api/auth/login` | Public | Admin login, returns a token |
+| GET | `/api/auth/me` | Admin | Get the logged-in admin's own profile |
+| POST | `/api/auth/change-password` | Admin | Change your own password (`currentPassword`, `newPassword`) — logs you out everywhere afterward |
+| GET | `/api/admins` | Admin | List all admin accounts |
+| POST | `/api/admins` | Admin | Create a new admin account (`name`, `email`, `password`, optional `role`) |
+| PUT | `/api/admins/:id/reset-password` | Admin | Reset **another** admin's password (e.g. they're locked out). Omit `newPassword` to auto-generate one — it's returned once in the response, so copy it down and share it securely. Forces that admin to log out everywhere. |
+| DELETE | `/api/admins/:id` | Admin | Remove an admin account (can't delete yourself or the last remaining admin) |
+| GET | `/api/settings` | Public | Get configurable dropdown lists (vehicle categories, brands, fuel types, transmission types) and the site's currency |
+| PUT | `/api/settings` | Admin | Update those lists and/or currency |
+| POST | `/api/uploads/images` | Admin | Upload up to 5 vehicle images (`multipart/form-data`, field name `images`) — hosted for free in a GitHub repo, returns the raw URLs to save on the vehicle |
+| POST | `/api/geocode/locate-ip` | Admin | Estimate a location from an IP address (`{ ip }`) — approximate, ISP-level accuracy, not true GPS |
+| GET | `/api/geocode/reverse` | Admin | Turn coordinates (`?lat=&lng=`) into a human-readable place name |
 | GET | `/api/vehicles` | Public | List vehicles (filters: `?status=`, `?category=`, `?search=`) |
 | GET | `/api/vehicles/:id` | Public | Get one vehicle |
 | POST | `/api/vehicles` | Admin | Add a vehicle |
@@ -188,3 +199,46 @@ npm run dev             # starts on http://localhost:4000, auto-restarts on chan
 ```
 
 Point your frontend's `API_BASE` at `http://localhost:4000/api` while testing locally.
+
+## 8. Vehicle image uploads (hosted for free on GitHub)
+
+Instead of paying for image storage, uploaded vehicle photos get committed straight into
+a GitHub repo, and the app uses GitHub's raw file URLs to display them. Here's the one-time setup:
+
+1. **Create a new, empty GitHub repo** just for images, e.g. `sidita-vehicle-images`
+   (Public — raw URLs from private repos won't load in a browser without extra auth).
+2. **Create a fine-grained Personal Access Token**: GitHub → Settings → Developer settings →
+   Personal access tokens → Fine-grained tokens → **Generate new token**.
+   - Repository access: "Only select repositories" → choose `sidita-vehicle-images`
+   - Permissions → Repository permissions → **Contents: Read and write**
+   - Generate, and copy the token (starts with `github_pat_...`) — you won't see it again.
+3. On Render → your backend service → Environment, add:
+   - `GITHUB_TOKEN` = the token you just copied
+   - `GITHUB_IMAGES_REPO` = `your-username/sidita-vehicle-images`
+   - `GITHUB_IMAGES_BRANCH` = `main`
+4. Save — Render redeploys automatically. Uploading images in the admin panel now works;
+   each photo appears as a new commit in that repo, and its raw URL is what's stored on the vehicle.
+
+If these env vars aren't set, the upload endpoint returns a clear error telling you so — vehicles
+can still be saved without new images in the meantime.
+
+## 9. Email notifications (free, via Resend)
+
+The backend emails your admin team when a customer submits a request, and emails a new admin
+their login details (plus notifies the rest of the team) when you add someone. Setup:
+
+1. Go to https://resend.com and sign up (free tier: 3,000 emails/month, 100/day).
+2. Once logged in, go to **API Keys** → **Create API Key**. Copy it.
+3. On Render → your backend service → Environment, add:
+   - `RESEND_API_KEY` = the key you just copied
+4. Save — Render redeploys automatically. That's it — emails will start sending immediately
+   from `onboarding@resend.dev` with the display name "SIDITA Halal Rentals", no domain
+   verification needed.
+
+**Optional, for a more professional sender address later:** in Resend, go to **Domains** → add
+and verify your own domain (e.g. `sidita-rentals.com`), then set `EMAIL_FROM_ADDRESS` to
+something like `notifications@sidita-rentals.com` on Render.
+
+If `RESEND_API_KEY` isn't set, the app still works completely normally — it just skips sending
+emails and logs a warning, so nothing breaks if you haven't set this up yet.
+
