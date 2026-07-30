@@ -73,17 +73,15 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 // PATCH /api/vehicles/:id/tracking - admin only, update GPS ping / location
 router.patch('/:id/tracking', requireAdmin, async (req, res) => {
   try {
-    const { deviceIp, deviceId, lat, lng } = req.body;
-    const vehicle = await Vehicle.findByIdAndUpdate(
-      req.params.id,
-      {
-        'tracking.deviceIp': deviceIp,
-        'tracking.deviceId': deviceId,
-        'tracking.lastKnownLocation': { lat, lng },
-        'tracking.lastPingAt': new Date()
-      },
-      { new: true }
-    );
+    const { deviceIp, deviceId, lat, lng, locationLabel } = req.body;
+    const update = {
+      'tracking.deviceIp': deviceIp,
+      'tracking.deviceId': deviceId,
+      'tracking.lastKnownLocation': { lat, lng },
+      'tracking.lastPingAt': new Date()
+    };
+    if (locationLabel !== undefined) update['tracking.locationLabel'] = locationLabel;
+    const vehicle = await Vehicle.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!vehicle) return res.status(404).json({ error: 'Vehicle not found' });
     res.json(vehicle);
   } catch (err) {
