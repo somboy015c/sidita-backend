@@ -3,8 +3,35 @@ const Lease = require('../models/Lease');
 const Vehicle = require('../models/Vehicle');
 const { requireAdmin } = require('../middleware/auth');
 const { sendNewRequestEmail } = require('../lib/email');
+const { calculateEstimatedTotal } = require('../lib/pricing');
 
 const router = express.Router();
+
+// POST /api/leases/estimate - public. Same calculation used when the request is actually
+// created, so the number shown to the customer while they're filling the form always
+// matches what gets recorded. Body: { vehicle, type, startDate, endDate }
+router.post('/estimate', async (req, res) => {
+  try {
+    const { vehicle, type, startDate, endDate } = req.body;
+    if (!vehicle || !type) return res.status(400).json({ error: 'vehicle and type are required' });
+
+    const vehicleDoc = await Vehicle.findById(vehicle);
+    if (!vehicleDoc) return res.status(404).json({ error: 'Vehicle not found' });
+
+    const estimate = calculateEstimatedTotal({
+      type,
+      startDate,
+      endDate,
+      dailyRentalRate: vehicleDoc.dailyRentalRate,
+      monthlyLeaseRate: vehicleDoc.monthlyLeaseRate,
+      purchasePrice: vehicleDoc.purchasePrice
+    });
+
+    res.json(estimate);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to calculate estimate', details: err.message });
+  }
+});
 
 // POST /api/leases - public: customer submits a lease/rental/purchase request
 router.post('/', async (req, res) => {
@@ -18,6 +45,17 @@ router.post('/', async (req, res) => {
     const vehicleDoc = await Vehicle.findById(vehicle);
     if (!vehicleDoc) return res.status(404).json({ error: 'Vehicle not found' });
 
+    // The backend recalculates the total itself rather than trusting a client-supplied
+    // number, using the exact same formula the /estimate endpoint already showed the customer.
+    const { total: totalValue } = calculateEstimatedTotal({
+      type,
+      startDate,
+      endDate,
+      dailyRentalRate: vehicleDoc.dailyRentalRate,
+      monthlyLeaseRate: vehicleDoc.monthlyLeaseRate,
+      purchasePrice: vehicleDoc.purchasePrice
+    });
+
     const lease = await Lease.create({
       vehicle,
       type,
@@ -26,7 +64,8 @@ router.post('/', async (req, res) => {
       customerPhone,
       startDate,
       endDate,
-      notes
+      notes,
+      totalValue
     });
 
     // Fire-and-forget: never let an email hiccup break the customer's request.
