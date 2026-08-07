@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const LeaseSchema = new mongoose.Schema(
   {
     vehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle', required: true },
+    customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer' }, // set when the requester is a signed-in customer
     type: {
       type: String,
       enum: ['rental', 'lease', 'purchase'],

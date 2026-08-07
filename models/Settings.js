@@ -29,7 +29,11 @@ const SettingsSchema = new mongoose.Schema(
     currency: {
       code: { type: String, default: 'NGN' },
       symbol: { type: String, default: '₦' }
-    }
+    },
+
+    // When true (default), customers can submit requests without an account.
+    // When false, they must sign up / log in first.
+    guestModeEnabled: { type: Boolean, default: true }
   },
   { timestamps: true }
 );
