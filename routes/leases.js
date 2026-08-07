@@ -1,7 +1,9 @@
 const express = require('express');
 const Lease = require('../models/Lease');
 const Vehicle = require('../models/Vehicle');
+const Settings = require('../models/Settings');
 const { requireAdmin } = require('../middleware/auth');
+const { optionalCustomer } = require('../middleware/customerAuth');
 const { sendNewRequestEmail } = require('../lib/email');
 const { calculateEstimatedTotal } = require('../lib/pricing');
 
@@ -33,10 +35,23 @@ router.post('/estimate', async (req, res) => {
   }
 });
 
-// POST /api/leases - public: customer submits a lease/rental/purchase request
-router.post('/', async (req, res) => {
+// POST /api/leases - public (or customer-authenticated, depending on guest mode):
+// customer submits a lease/rental/purchase request
+router.post('/', optionalCustomer, async (req, res) => {
   try {
-    const { vehicle, type, customerName, customerEmail, customerPhone, startDate, endDate, notes } = req.body;
+    const settings = await Settings.findOne({ key: 'global' });
+    const guestModeEnabled = settings ? settings.guestModeEnabled !== false : true;
+
+    if (!guestModeEnabled && !req.customer) {
+      return res.status(401).json({ error: 'Please sign in or create an account to submit a request.' });
+    }
+
+    const { vehicle, type, startDate, endDate, notes } = req.body;
+    // When signed in, always use the account's own details — never trust body-supplied
+    // name/email/phone for a logged-in customer. Guests (when allowed) supply their own.
+    const customerName = req.customer ? req.customer.name : req.body.customerName;
+    const customerEmail = req.customer ? req.customer.email : req.body.customerEmail;
+    const customerPhone = req.customer ? req.customer.phone : req.body.customerPhone;
 
     if (!vehicle || !type || !customerName || !customerEmail || !customerPhone) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -58,6 +73,7 @@ router.post('/', async (req, res) => {
 
     const lease = await Lease.create({
       vehicle,
+      customer: req.customer ? req.customer.id : undefined,
       type,
       customerName,
       customerEmail,
@@ -77,12 +93,22 @@ router.post('/', async (req, res) => {
   }
 });
 
+// GET /api/leases/mine - customer only, their own request history
+router.get('/mine', require('../middleware/customerAuth').requireCustomer, async (req, res) => {
+  try {
+    const leases = await Lease.find({ customer: req.customer.id }).populate('vehicle').sort({ createdAt: -1 });
+    res.json(leases);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch your requests', details: err.message });
+  }
+});
+
 // GET /api/leases - admin only, list all requests
 router.get('/', requireAdmin, async (req, res) => {
   try {
     const { status } = req.query;
     const filter = status ? { status } : {};
-    const leases = await Lease.find(filter).populate('vehicle').sort({ createdAt: -1 });
+    const leases = await Lease.find(filter).populate('vehicle').populate('customer', 'name email').sort({ createdAt: -1 });
     res.json(leases);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch requests', details: err.message });

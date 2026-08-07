@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
 router.put('/', requireAdmin, async (req, res) => {
   try {
     const settings = await getOrCreateSettings();
-    const { vehicleCategories, vehicleBrands, fuelTypes, transmissionTypes, currency } = req.body;
+    const { vehicleCategories, vehicleBrands, fuelTypes, transmissionTypes, currency, guestModeEnabled } = req.body;
 
     if (Array.isArray(vehicleCategories)) settings.vehicleCategories = cleanList(vehicleCategories);
     if (Array.isArray(vehicleBrands)) settings.vehicleBrands = cleanList(vehicleBrands);
@@ -34,6 +34,7 @@ router.put('/', requireAdmin, async (req, res) => {
       if (currency.code) settings.currency.code = String(currency.code).trim();
       if (currency.symbol) settings.currency.symbol = String(currency.symbol).trim();
     }
+    if (typeof guestModeEnabled === 'boolean') settings.guestModeEnabled = guestModeEnabled;
 
     await settings.save();
     res.json(settings);
