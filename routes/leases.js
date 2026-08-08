@@ -108,7 +108,7 @@ router.get('/', requireAdmin, async (req, res) => {
   try {
     const { status } = req.query;
     const filter = status ? { status } : {};
-    const leases = await Lease.find(filter).populate('vehicle').populate('customer', 'name email').sort({ createdAt: -1 });
+    const leases = await Lease.find(filter).populate('vehicle').populate('customer', 'name email phone').sort({ createdAt: -1 });
     res.json(leases);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch requests', details: err.message });
