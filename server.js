@@ -12,6 +12,7 @@ const settingsRoutes = require('./routes/settings');
 const uploadRoutes = require('./routes/uploads');
 const geocodeRoutes = require('./routes/geocode');
 const customerAuthRoutes = require('./routes/customerAuth');
+const messagesRoutes = require('./routes/messages');
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/geocode', geocodeRoutes);
 app.use('/api/customer-auth', customerAuthRoutes);
+app.use('/api/messages', messagesRoutes);
 
 // 404 handler
 app.use((req, res) => {
