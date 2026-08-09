@@ -60,6 +60,11 @@ router.post('/', optionalCustomer, async (req, res) => {
     const vehicleDoc = await Vehicle.findById(vehicle);
     if (!vehicleDoc) return res.status(404).json({ error: 'Vehicle not found' });
 
+    if (vehicleDoc.status !== 'available') {
+      const statusLabel = vehicleDoc.status === 'maintenance' ? 'in maintenance' : vehicleDoc.status;
+      return res.status(409).json({ error: `${vehicleDoc.name} is currently ${statusLabel} and not available for new requests right now.` });
+    }
+
     // The backend recalculates the total itself rather than trusting a client-supplied
     // number, using the exact same formula the /estimate endpoint already showed the customer.
     const { total: totalValue } = calculateEstimatedTotal({

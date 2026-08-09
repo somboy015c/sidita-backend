@@ -75,7 +75,9 @@ router.get('/unread-count', requireAdmin, async (req, res) => {
 // sorted with the most recently active conversations first
 router.get('/', requireAdmin, async (req, res) => {
   try {
-    const customers = await Customer.find().select('name email phone').sort({ createdAt: -1 });
+    // Only customers with an actual message thread — not every registered account.
+    const customerIds = await Message.distinct('customer');
+    const customers = await Customer.find({ _id: { $in: customerIds } }).select('name email phone');
 
     const conversations = await Promise.all(customers.map(async (customer) => {
       const [lastMessage, unreadCount] = await Promise.all([
