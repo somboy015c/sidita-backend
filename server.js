@@ -13,6 +13,7 @@ const uploadRoutes = require('./routes/uploads');
 const geocodeRoutes = require('./routes/geocode');
 const customerAuthRoutes = require('./routes/customerAuth');
 const messagesRoutes = require('./routes/messages');
+const customersRoutes = require('./routes/customers');
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.use('/api/uploads', uploadRoutes);
 app.use('/api/geocode', geocodeRoutes);
 app.use('/api/customer-auth', customerAuthRoutes);
 app.use('/api/messages', messagesRoutes);
+app.use('/api/customers', customersRoutes);
 
 // 404 handler
 app.use((req, res) => {
