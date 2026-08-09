@@ -48,7 +48,58 @@ router.post('/mine/thread', requireCustomer, async (req, res) => {
   }
 });
 
+// GET /api/messages/mine/unread-count - customer only
+router.get('/mine/unread-count', requireCustomer, async (req, res) => {
+  try {
+    const count = await Message.countDocuments({ customer: req.customer.id, sender: 'admin', readByCustomer: false });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load unread count', details: err.message });
+  }
+});
+
 // ─── Admin side ────────────────────────────────────────────
+
+// GET /api/messages/unread-count - admin only, total unread across all customers
+// (registered before /:customerId so "unread-count" is never treated as a customer id)
+router.get('/unread-count', requireAdmin, async (req, res) => {
+  try {
+    const count = await Message.countDocuments({ sender: 'customer', readByAdmin: false });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load unread count', details: err.message });
+  }
+});
+
+// GET /api/messages - admin only, one row per customer: last message + unread count,
+// sorted with the most recently active conversations first
+router.get('/', requireAdmin, async (req, res) => {
+  try {
+    const customers = await Customer.find().select('name email phone').sort({ createdAt: -1 });
+
+    const conversations = await Promise.all(customers.map(async (customer) => {
+      const [lastMessage, unreadCount] = await Promise.all([
+        Message.findOne({ customer: customer._id }).sort({ createdAt: -1 }),
+        Message.countDocuments({ customer: customer._id, sender: 'customer', readByAdmin: false })
+      ]);
+      return {
+        customer,
+        lastMessage: lastMessage ? { body: lastMessage.body, sender: lastMessage.sender, createdAt: lastMessage.createdAt } : null,
+        unreadCount
+      };
+    }));
+
+    conversations.sort((a, b) => {
+      const aTime = a.lastMessage ? new Date(a.lastMessage.createdAt).getTime() : 0;
+      const bTime = b.lastMessage ? new Date(b.lastMessage.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
+
+    res.json(conversations);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load conversations', details: err.message });
+  }
+});
 
 // GET /api/messages/:customerId - admin only, full thread with one customer
 router.get('/:customerId', requireAdmin, async (req, res) => {

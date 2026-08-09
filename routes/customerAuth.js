@@ -29,14 +29,20 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
 
-    const existing = await Customer.findOne({ email: email.toLowerCase().trim() });
-    if (existing) return res.status(409).json({ error: 'An account with that email already exists — try signing in instead.' });
+    const existingEmail = await Customer.findOne({ email: email.toLowerCase().trim() });
+    if (existingEmail) return res.status(409).json({ error: 'An account with that email already exists — try signing in instead.' });
+
+    const trimmedPhone = (phone || '').trim();
+    if (trimmedPhone) {
+      const existingPhone = await Customer.findOne({ phone: trimmedPhone });
+      if (existingPhone) return res.status(409).json({ error: 'An account with that phone number already exists — try signing in instead.' });
+    }
 
     const passwordHash = await bcrypt.hash(password, 10);
     const customer = await Customer.create({
       name: name.trim(),
       email: email.toLowerCase().trim(),
-      phone: (phone || '').trim(),
+      phone: trimmedPhone,
       passwordHash
     });
 
